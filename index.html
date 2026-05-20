@@ -626,6 +626,30 @@
             const wpmInput = document.getElementById("wpmInput");
             const resultsEl = document.getElementById("results");
 
+            const params = new URLSearchParams(document.location.search);
+            const hours = params.get("hours");
+            const minutes = params.get("minutes");
+            const wpm = params.get("wpm");
+
+            function setValuesFromUrl() {
+                const correctWpm = Number(wpm) > 0;
+                const correctHoursInput = Number(hours) > 0;
+                const correctMinutesInput = Number(minutes) > 0;
+
+                if (correctWpm) {
+                    wpmInput.value = wpm;
+                    toggleAdvanced();
+                }
+
+                if (correctHoursInput) {
+                    timeInput.value = hours;
+                    setUnit("hours");
+                } else if (correctMinutesInput) {
+                    timeInput.value = minutes;
+                    setUnit("minutes");
+                }
+            }
+
             function toggleAdvanced() {
                 advancedMode = !advancedMode;
                 document
@@ -662,10 +686,10 @@
 
                 if (pct > 0) {
                     html += `
-        <div class="progress-row">
-          <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-          <div class="progress-label">+ ${pct}% of another</div>
-        </div>`;
+            <div class="progress-row">
+              <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+              <div class="progress-label">+ ${pct}% of another</div>
+            </div>`;
                 }
 
                 el.innerHTML = html;
@@ -695,12 +719,22 @@
                     return;
                 }
 
-                const wpm = getWPM();
-                const minutesPerBook = WORDS_PER_BOOK / wpm;
+                const speed = getWPM();
+                const minutesPerBook = WORDS_PER_BOOK / speed;
                 const dailyMinutes = currentUnit === "hours" ? raw * 60 : raw;
                 const daily = dailyMinutes / minutesPerBook;
                 const weekly = daily * 7;
                 const yearly = daily * 365;
+
+                params.delete("minutes");
+                params.delete("hours");
+                params.set(currentUnit, raw);
+                if (advancedMode && Number(wpmInput.value) > 0) {
+                    params.set("wpm", wpmInput.value);
+                } else {
+                    params.delete("wpm");
+                }
+                history.replaceState(null, "", "?" + params.toString());
 
                 renderResult(document.getElementById("daily"), daily);
                 renderResult(document.getElementById("weekly"), weekly);
@@ -712,6 +746,8 @@
 
             timeInput.addEventListener("input", calculate);
             wpmInput.addEventListener("input", calculate);
+
+            setValuesFromUrl();
         </script>
     </body>
 </html>
